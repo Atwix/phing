@@ -1,0 +1,75 @@
+<?xml version="1.0" ?>
+<project name="atwix deployment" basedir="." default="build">
+<property name="version" value="1.0" />
+<!-- Files working copy path -->
+<property name="repo.dir" value="../public" />
+<!-- Name of the brench with changes for deployment -->
+<property name="staging.branch" value="staging" />
+<!-- A name of the main git remote -->
+<property name="remote.name" value="origin" />
+<!-- Run files sync in verbose mode -->
+<property name="sync.verbose" value="true" />
+<!-- Run files sync with no files changes, just to test the process -->
+<property name="files.sync.dryrun" value="false" />
+
+<resolvepath propertyName="repo.dir.resolved" file="${repo.dir}" />
+
+<!-- Public targets -->
+<target name="sync-files" description="Copy files">
+  <phingcall target="-sync-execute-task" /> 
+</target>
+
+<target name="git-sync" description="Sync files version via git">
+  <!-- Checkout staging branch -->
+  <phingcall target="-checkout-staging" />
+  <!-- Pull changes from the staging branch -->
+  <phingcall target="-pull-staging" />
+</target>
+
+<target name="dryrun" description="Force files sync process do not write the changes. Just list">
+  <property name="files.sync.dryrun" value="true" override="true" />
+</target>
+
+<!-- Private targets -->
+<target name="-init-files-sync" description="Load main settings">
+  <tstamp />
+  <property file="build.properties" />
+</target>
+<target name="-checkout-staging" description="Checkout staging branch">
+  <gitcheckout
+      repository="${repo.dir.resolved}" 
+      branchname="${staging.branch}" quiet="false" create="false" />
+</target>
+<target name="-pull-staging" description="Pull staging branch changes">
+  <gitpull
+      repository="${repo.dir.resolved}" refspec="${staging.branch}"
+      source="${remote.name}" />
+</target>
+<target name="-current-ignore-patterns" description="Show all patterns from sync ignore list">
+  <exec command="cat ${sync.exclude.file}" passthru="true" />
+</target>
+<target name="-sync-execute-task" depends="-init-files-sync">
+  <property file="sync.properties" />
+  <if>
+    <not>
+      <isset property="sync.verbose" />
+    </not>
+    <then>
+      <property name="sync.verbose" value="true" override="true" />
+      <echo message="The value of sync.verbose has been set to true" />
+    </then>
+  </if>
+  <!-- Display current ignore files list for rsync -->
+  <phingcall target="-current-ignore-patterns" />
+  <property name="sync.remote.auth" value="${sync.remote.user}@${sync.remote.host}" />
+  <taskdef name="sync" classname="phing.tasks.ext.FileSyncTask" />
+  <sync
+    sourcedir="${sync.source.projectdir}"
+    destinationdir="${sync.remote.auth}:${sync.destination.projectdir}"
+    backupdir="${sync.destination.backupdir}"
+    excludefile="${sync.exclude.file}"
+    checksum="true"
+    dryrun="${files.sync.dryrun}"
+    verbose="${sync.verbose}" />
+</target>
+</project>
