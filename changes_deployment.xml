@@ -11,6 +11,8 @@
 <property name="sync.verbose" value="true" />
 <!-- Run files sync with no files changes, just to test the process -->
 <property name="files.sync.dryrun" value="false" />
+<!-- A name of the server state (master) branch -->
+<property name="master.branch" value="master" />
 
 <resolvepath propertyName="repo.dir.resolved" file="${repo.dir}" />
 
@@ -20,10 +22,18 @@
 </target>
 
 <target name="git-sync" description="Sync files version via git">
+  <!-- Reset current branch changes if any -->
+  <phingcall target="-reset-branch" />
   <!-- Checkout staging branch -->
   <phingcall target="-checkout-staging" />
   <!-- Pull changes from the staging branch -->
   <phingcall target="-pull-staging" />
+  <!-- Merge staging branch into master branch -->
+  <phingcall target="-merge-into-master" />
+  <!-- Push server branch -->
+  <phingcall target="-push-master-branch" />
+  <!-- Checkout staging branch -->
+  <phingcall target="-checkout-staging" />
 </target>
 
 <target name="dryrun" description="Force files sync process do not write the changes. Just list">
@@ -35,6 +45,9 @@
   <tstamp />
   <property file="build.properties" />
 </target>
+<target name="-reset-branch" description="Reset current branch to it's HEAD state">
+  <exec command="git reset --hard HEAD 2>&amp;1" dir="${repo.dir.resolved}" passthru="true"/>
+</target>
 <target name="-checkout-staging" description="Checkout staging branch">
   <gitcheckout
       repository="${repo.dir.resolved}" 
@@ -44,6 +57,18 @@
   <gitpull
       repository="${repo.dir.resolved}" refspec="${staging.branch}"
       source="${remote.name}" />
+</target>
+<target name="-merge-into-master" description="Merge staging branch into master branch">
+  <gitcheckout
+      repository="${repo.dir.resolved}" 
+      branchname="${master.branch}" quiet="false" create="false" />
+  <gitpull
+      repository="${repo.dir.resolved}" refspec="${master.branch}"
+      source="${remote.name}" />
+  <exec command="git merge -Xtheirs ${staging.branch} 2>&amp;1" dir="${repo.dir.resolved}" passthru="true"/>
+</target>
+<target name="-push-master-branch" description="Push master branch" >
+  <exec command="git push ${remote.name} ${master.branch} 2>&amp;1" dir="${repo.dir.resolved}" passthru="true" />
 </target>
 <target name="-current-ignore-patterns" description="Show all patterns from sync ignore list">
   <exec command="cat ${sync.exclude.file}" passthru="true" />
