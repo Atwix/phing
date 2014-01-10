@@ -1,0 +1,24 @@
+<?xml version="1.0" ?>
+<project name="atwix local db update" basedir="." default="build">
+<property name="version" value="1.0" />
+<property file="build.properties" />
+<target name="remote-server-connect">
+  <echo message="Connecting ${sync.remote.user}@${sync.remote.host}" />
+  <ssh username="${sync.remote.user}" 
+  host="${sync.remote.host}" 
+  pubkeyfile="/home/jenkins/.ssh/id_rsa.pub"
+  privkeyfile="/home/jenkins/.ssh/id_rsa"
+  display="false"
+  command="cd ${sync.destination.projectdir}/var/n98 2>&amp;1" 
+  property="cd.output" />
+  <if>
+    <contains string="${cd.output}" substring="No such file" />
+    <then>
+      <echo message="need to upload n98"/>
+    </then>
+    <else>
+      <echo message="Everything is fine, we can proceed" />
+    </else>
+  </if>
+</target>
+</project>

@@ -10,9 +10,11 @@
 <!-- Run files sync in verbose mode -->
 <property name="sync.verbose" value="true" />
 <!-- Run files sync with no files changes, just to test the process -->
-<property name="files.sync.dryrun" value="false" />
+<property name="dryrun" value="false" />
 <!-- A name of the server state (master) branch -->
 <property name="master.branch" value="master" />
+<!-- Remove files on dest server which were deleted on the source -->
+<property name="sync-delete" value="false" />
 
 <resolvepath propertyName="repo.dir.resolved" file="${repo.dir}" />
 
@@ -94,7 +96,9 @@
     backupdir="${sync.destination.backupdir}"
     excludefile="${sync.exclude.file}"
     checksum="true"
-    dryrun="${files.sync.dryrun}"
+    dryrun="${dryrun}"
+    itemizechanges="true"
+    delete="${sync-delete}"
     verbose="${sync.verbose}" />
 </target>
 </project>

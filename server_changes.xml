@@ -10,7 +10,7 @@
 <!-- Run files sync in verbose mode -->
 <property name="sync.verbose" value="true" />
 <!-- Run files sync with no files changes, just to test the process -->
-<property name="files.sync.dryrun" value="false" />
+<property name="dryrun" value="false" />
 
 <resolvepath propertyName="repo.dir.resolved" file="${repo.dir}" />
 
@@ -99,7 +99,7 @@
     sourcedir="${sync.remote.auth}:${sync.destination.projectdir}"
     destinationdir="${sync.source.projectdir}"
     excludefile="${sync.exclude.file}"
-    dryrun="${files.sync.dryrun}"   
+    dryrun="${dryrun}"   
     checksum="true"
     verbose="${sync.verbose}" />
 </target>
