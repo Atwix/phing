@@ -2,23 +2,37 @@
 <project name="atwix local db update" basedir="." default="build">
 <property name="version" value="1.0" />
 <property file="build.properties" />
+<property name="privkeyfile" value="/home/jenkins/.ssh/id_rsa" /> 
+<property name="pubkeyfile" value="/home/jenkins/.ssh/id_rsa.pub" /> 
+<property name="remote.n98.path" value="${sync.destination.projectdir}/var/n98" />
+
 <target name="remote-server-connect">
   <echo message="Connecting ${sync.remote.user}@${sync.remote.host}" />
   <ssh username="${sync.remote.user}" 
   host="${sync.remote.host}" 
-  pubkeyfile="/home/jenkins/.ssh/id_rsa.pub"
-  privkeyfile="/home/jenkins/.ssh/id_rsa"
+  pubkeyfile="${pubkeyfile}"
+  privkeyfile="${privkeyfile}"
   display="false"
   command="cd ${sync.destination.projectdir}/var/n98 2>&amp;1" 
   property="cd.output" />
   <if>
     <contains string="${cd.output}" substring="No such file" />
     <then>
-      <echo message="need to upload n98"/>
+      <phingcall target="-upload-n98" />
     </then>
     <else>
       <echo message="Everything is fine, we can proceed" />
     </else>
   </if>
+</target>
+
+<target name="-upload-n98">
+  <echo message="Uploading n98-magerun.phar to the server" />
+  <scp username="${sync.remote.user}"
+  host="${sync.remote.host}"
+  pubkeyfile="${pubkeyfile}"
+  privkeyfile="${privkeyfile}"
+  todir="${remote.n98.path}"
+  file="../../system/n98/n98-magerun.phar" />
 </target>
 </project>
