@@ -20,10 +20,8 @@
     <then>
       <phingcall target="-upload-n98" />
     </then>
-    <else>
-      <echo message="Everything is fine, we can proceed" />
-    </else>
   </if>
+  <phingcall target="-execute-n98" />
 </target>
 
 <target name="-upload-n98">
@@ -34,5 +32,17 @@
   privkeyfile="${privkeyfile}"
   todir="${remote.n98.path}"
   file="../../system/n98/n98-magerun.phar" />
+</target>
+
+<target name="-execute-n98">
+  <echo message="Executing n98-magerun.phar on the remote server" />
+  <ssh username="${sync.remote.user}" 
+  host="${sync.remote.host}" 
+  pubkeyfile="${pubkeyfile}"
+  privkeyfile="${privkeyfile}"
+  display="false"
+  command="${sync.destination.projectdir}/var/n98/n98-magerun.phar list 2>&amp;1" 
+  property="n98.output" />
+  <echo message="${n98.output}" />
 </target>
 </project>
