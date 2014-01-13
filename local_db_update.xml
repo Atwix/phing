@@ -7,6 +7,7 @@
 <property name="remote.n98.path" value="${sync.destination.projectdir}/var/n98" />
 <property name="dump.parameters" value="@sales @customers @stripped" />
 <property name="dump.filename" value="dev_dump.sql" />
+<property name="local.db.name" value="test" />
 
 <target name="remote-dump">
   <echo message="Connecting ${sync.remote.user}@${sync.remote.host}" />
@@ -84,5 +85,48 @@
   command="cd ${remote.n98.path} ; rm -f ${dump.filename}.gz ; rm -f ${dump.filename} 2>&amp;1" 
   property="remove.output" />
   <echo message="${remove.output}" />
+</target>
+
+<target name="-create-local-db"> 
+  <if>
+    <equals arg1="" arg2="${local.db.name}" />
+    <then>
+      <fail message="Error: No local database name was set" />
+    </then>
+  </if>
+  <exec command="echo 'DROP DATABASE ${local.db.name};' > tmp" passthru="true" />
+  <exec command="mysql -u ${sync.local.db.user} -p${sync.local.db.password} &lt; tmp"  outputProperty="sql.output"/>
+  <echo message="${sql.output}" />
+  <exec command="echo 'CREATE DATABASE ${local.db.name};' > tmp" passthru="true"/>
+  <exec command="mysql -u ${sync.local.db.user} -p${sync.local.db.password} &lt; tmp"  outputProperty="sql.output"/>
+  <exec command="rm -f tmp" /> 
+  <if>
+    <contains string="${sql.output}" substring="ERROR" />
+    <then>
+      <fail message="${sql.output}" />
+    </then>
+  </if>
+</target>
+
+<target name="-unzip-local-dump">
+  <exec command="cd dumps; gunzip ${dump.filename}.gz" passthru="true" />
+</target>
+
+<target name="-import-local-dump">
+  <exec command="cd dumps; mysql -u ${sync.local.db.user} -p${sync.local.db.password} ${local.db.name} &lt; ${dump.filename}" outputProperty="sql.output" />
+  <if>
+    <or>
+      <contains string="${sql.output}" substring="ERROR" />
+      <contains string="${sql.output}" substring="cannot" />
+   </or>
+   <then>
+     <fail message="${sql.output}" />
+   </then>
+  </if>
+  <echo message="${sql.output}" />
+</target>
+
+<target name="-remove-local-dump">
+  <exec command="cd dumps; rm ${dump.filename}" passthru="true" />
 </target>
 </project>
