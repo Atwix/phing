@@ -5,8 +5,10 @@
 <property name="privkeyfile" value="/home/jenkins/.ssh/id_rsa" /> 
 <property name="pubkeyfile" value="/home/jenkins/.ssh/id_rsa.pub" /> 
 <property name="remote.n98.path" value="${sync.destination.projectdir}/var/n98" />
+<property name="dump.parameters" value="@sales @customers @stripped" />
+<property name="dump.filename" value="dev_dump.sql" />
 
-<target name="remote-server-connect">
+<target name="remote-dump">
   <echo message="Connecting ${sync.remote.user}@${sync.remote.host}" />
   <ssh username="${sync.remote.user}" 
   host="${sync.remote.host}" 
@@ -22,6 +24,9 @@
     </then>
   </if>
   <phingcall target="-execute-n98" />
+  <phingcall target="-gzip-dump" />
+  <phingcall target="-download-dump" />
+  <phingcall target="-remove-dump" />
 </target>
 
 <target name="-upload-n98">
@@ -35,14 +40,49 @@
 </target>
 
 <target name="-execute-n98">
-  <echo message="Executing n98-magerun.phar on the remote server" />
+  <echo message="Executing n98-magerun.phar database dump with parameters: ${dump.parameters}" />
   <ssh username="${sync.remote.user}" 
   host="${sync.remote.host}" 
   pubkeyfile="${pubkeyfile}"
   privkeyfile="${privkeyfile}"
   display="false"
-  command="${sync.destination.projectdir}/var/n98/n98-magerun.phar list 2>&amp;1" 
+  command="cd ${sync.destination.projectdir}/var/n98/ ; rm -f *.sql ; ./n98-magerun.phar db:dump -f --strip='${dump.parameters}' ${dump.filename} 2>&amp;1" 
   property="n98.output" />
   <echo message="${n98.output}" />
+</target>
+
+<target name="-gzip-dump" >
+  <echo message="Gzipping current dump" />
+  <ssh username="${sync.remote.user}" 
+  host="${sync.remote.host}" 
+  pubkeyfile="${pubkeyfile}"
+  privkeyfile="${privkeyfile}"
+  display="false"
+  command="cd ${sync.destination.projectdir}/var/n98/ ; gzip -9 -f ${dump.filename} 2>&amp;1" 
+  property="n98.output" />
+</target>
+
+<target name="-download-dump">
+  <echo message="Downloading dump to the local server" />
+  <exec command="mkdir dumps" dir="." />
+  <scp username="${sync.remote.user}"
+  host="${sync.remote.host}"
+  pubkeyfile="${pubkeyfile}"
+  privkeyfile="${privkeyfile}"
+  fetch="true"
+  todir="dumps"
+  file="${remote.n98.path}/${dump.filename}.gz">
+  </scp>
+</target>
+
+<target name="-remove-dump">
+  <ssh username="${sync.remote.user}" 
+  host="${sync.remote.host}" 
+  pubkeyfile="${pubkeyfile}"
+  privkeyfile="${privkeyfile}"
+  display="false"
+  command="cd ${remote.n98.path} ; rm -f ${dump.filename}.gz ; rm -f ${dump.filename} 2>&amp;1" 
+  property="remove.output" />
+  <echo message="${remove.output}" />
 </target>
 </project>
