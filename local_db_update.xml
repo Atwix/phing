@@ -28,6 +28,10 @@
   <phingcall target="-gzip-dump" />
   <phingcall target="-download-dump" />
   <phingcall target="-remove-dump" />
+  <phingcall target="-create-local-db" />
+  <phingcall target="-unzip-local-dump" />
+  <phingcall target="-import-local-dump" />
+  <phingcall target="-remove-local-dump" />
 </target>
 
 <target name="-upload-n98">
@@ -50,6 +54,12 @@
   command="cd ${sync.destination.projectdir}/var/n98/ ; rm -f *.sql ; ./n98-magerun.phar db:dump -f --strip='${dump.parameters}' ${dump.filename} 2>&amp;1" 
   property="n98.output" />
   <echo message="${n98.output}" />
+  <if>
+    <contains string="${n98.output}" substring="PHP Fatal error" />
+    <then>
+      <fail message="The PHAR execution support is not allowed on this host!  ${n98.output}" />
+    </then>
+  </if>
 </target>
 
 <target name="-gzip-dump" >
@@ -109,7 +119,7 @@
 </target>
 
 <target name="-unzip-local-dump">
-  <exec command="cd dumps; gunzip ${dump.filename}.gz" passthru="true" />
+  <exec command="cd dumps; gunzip -f ${dump.filename}.gz" passthru="true" />
 </target>
 
 <target name="-import-local-dump">
